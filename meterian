@@ -1,0 +1,67 @@
+{
+  "exclusions": {
+    "security": {
+      "cves": [],
+      "advices": [
+        {
+          "uuid": "782b47be-aa8f-4216-b6af-2075486a26af",
+          "reason": "unapplicable",
+          "description": "No web interface.",
+          "transitive": false
+        },
+        {
+          "uuid": "2998b186-29d3-3a7f-9813-0ac48825e4ce",
+          "reason": "unapplicable",
+          "description": "Not applicable to execution path in application.",
+          "transitive": false
+        }
+      ],
+      "libraries": [
+        {
+          "library": {
+            "name": "System.Text.Encodings.Web",
+            "language": "dotnet"
+          },
+          "version": "6.0.0",
+          "description": "No web interface.",
+          "reason": "unapplicable",
+          "transitive": false
+        }
+      ]
+    },
+    "stability": {
+      "libraries": [
+        {
+          "library": {
+            "name": "Microsoft.Extensions.Http",
+            "language": "dotnet"
+          },
+          "version": "6.0.0",
+          "description": "V7 not applicable to Azure Functions.",
+          "reason": "unapplicable"
+        },
+        {
+          "library": {
+            "name": "System.Text.Encodings.Web",
+            "language": "dotnet"
+          },
+          "version": "6.0.0",
+          "description": "V7 not applicable to Azure Functions.",
+          "reason": "unapplicable"
+        }
+      ]
+    },
+    "licensing": {
+      "libraries": [
+        {
+          "library": {
+            "language": "dotnet",
+            "name": "new.melodiouscode.*"
+          },
+          "version": "*",
+          "description": "Internal library by melodiouscode.net."
+        }
+      ]
+    }
+  }
+}

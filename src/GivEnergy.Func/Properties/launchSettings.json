@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "GivEnergy.Func": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7263",
+      "launchBrowser": false
+    }
+  }
+}
