@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -19,10 +20,16 @@ namespace net.melodiouscode.GivEnergy.Func
 	{
 		private readonly GivEnergyService _service;
 		private readonly JsonSerializerOptions _serializerOptions;
+		private readonly HttpClient? _sentryCronClient;
 
-		public InverterControl(GivEnergyService service)
+		public InverterControl(GivEnergyService service, IHttpClientFactory factory)
 		{
 			_service = service;
+
+			if (Startup.UseSentryCron)
+			{
+				_sentryCronClient = factory.CreateClient("SentryCron");
+			}
 
 			_serializerOptions = new JsonSerializerOptions()
 			{
@@ -39,7 +46,6 @@ namespace net.melodiouscode.GivEnergy.Func
 			BlobClient writeCurrent,
 			[Blob("storage/schedule.json", FileAccess.Read)]
 			BlobClient scheduleClient,
-
 			ILogger log)
 		{
 			if (myTimer.IsPastDue)
@@ -50,12 +56,15 @@ namespace net.melodiouscode.GivEnergy.Func
 
 			try
 			{
+				await MarkStarted();
+
 				await using var scheduleStream = await scheduleClient.OpenReadAsync();
 
 				var schedule =
-					JsonSerializer.Deserialize<ActionPayload>(await new StreamReader(scheduleStream).ReadToEndAsync(), _serializerOptions)
+					JsonSerializer.Deserialize<ActionPayload>(await new StreamReader(scheduleStream).ReadToEndAsync(),
+						_serializerOptions)
 					?? throw new InvalidOperationException("The schedule is empty or missing");
-				
+
 				var zonedDateTime = SystemClock.Instance
 					.InZone(NodaTime.TimeZones.TzdbDateTimeZoneSource.Default.ForId(schedule.TimeZone))
 					.GetCurrentZonedDateTime();
@@ -75,7 +84,6 @@ namespace net.melodiouscode.GivEnergy.Func
 
 					currentAction = JsonSerializer.Deserialize<ActionPayload.ActionEvent>(
 						await new StreamReader(stream).ReadToEndAsync(), _serializerOptions);
-
 				}
 
 				if (currentAction == null || nextAction.Id != currentAction.Id)
@@ -90,12 +98,32 @@ namespace net.melodiouscode.GivEnergy.Func
 				{
 					log.LogInformation($"Staying with {currentAction}.");
 				}
+
+				await MarkCompleted();
 			}
 			catch (Exception e)
 			{
 				log.LogCritical(e, e.Message);
+
+				await MarkError();
+
 				throw;
 			}
+		}
+
+		private Task MarkStarted()
+		{
+			return _sentryCronClient?.GetAsync("?status=in_progress") ?? Task.CompletedTask;
+		}
+
+		private Task MarkCompleted()
+		{
+			return _sentryCronClient?.GetAsync("?status=ok") ?? Task.CompletedTask;
+		}
+
+		private Task MarkError()
+		{
+			return _sentryCronClient?.GetAsync("?status=error") ?? Task.CompletedTask;
 		}
 
 		private Task ExecuteAction(string inverter, ActionPayload.ActionEvent action)
